@@ -64,6 +64,330 @@
                 Tekan tombol "Cari Topik" untuk mulai!
             </h2>
             
+            <p id="topicSpoiler" class="text-sm text-slate-400 mb-6 italic min-h-[24px]">
+                
+            </p>
+
+            <button id="rollBtn" onclick="generateRandomTopic()" class="w-full md:w-auto px-8 py-3.5 bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white font-semibold rounded-2xl shadow-lg transition transform active:scale-95 flex items-center justify-center mx-auto space-x-2">
+                <span>Cari Topik 🎲</span>
+            </button>
+        </div>
+
+        <!-- LIVE PRACTICE AREA -->
+        <div class="w-full glass rounded-3xl p-6 md:p-8 text-center relative overflow-hidden">
+            
+            <!-- STATUS MIKROFON & TIMER -->
+            <div class="flex justify-between items-center mb-6">
+                <div id="micStatus" class="flex items-center space-x-2 text-xs font-medium text-slate-400 bg-slate-900/60 px-3 py-1.5 rounded-full border border-slate-800">
+                    <span class="w-2.5 h-2.5 rounded-full bg-slate-500" id="micDot"></span>
+                    <span id="micText">Mikrofon Standby</span>
+                </div>
+                <div class="text-3xl md:text-4xl font-extrabold text-accentCyan tracking-wider" id="timerDisplay">
+                    00:60
+                </div>
+            </div>
+
+            <!-- REAL-TIME COUNTERS -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800/80">
+                    <span class="text-xs text-slate-400 block mb-1">Eee / Anu Count</span>
+                    <span id="eeeCount" class="text-2xl md:text-3xl font-bold text-amber-400">0</span>
+                </div>
+                <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800/80">
+                    <span class="text-xs text-slate-400 block mb-1">Blank Count (Jeda)</span>
+                    <span id="blankCount" class="text-2xl md:text-3xl font-bold text-rose-400">0</span>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTON -->
+            <button id="actionBtn" onclick="toggleSession()" class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-2xl shadow-lg transition text-lg tracking-wide active:scale-95">
+                Mulai Berbicara (60 Detik)
+            </button>
+        </div>
+
+    </main>
+
+    <!-- DRAWER / MENU RIWAYAT -->
+    <div id="historyDrawer" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden transition-opacity opacity-0 flex justify-end">
+        <div class="w-full max-w-md bg-slate-900 h-full p-6 flex flex-col shadow-2xl border-l border-slate-800 transform translate-x-full transition-transform duration-300" id="drawerContent">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white">Riwayat Rekaman</h3>
+                <button onclick="toggleMenu()" class="text-slate-400 hover:text-white p-2">✕</button>
+            </div>
+            
+            <!-- LIST RIWAYAT -->
+            <div id="historyList" class="flex-1 overflow-y-auto space-y-4 pr-1">
+                <div class="text-xs text-slate-500 text-center py-4">Belum ada riwayat latihan.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Database Topik Sejarah & Kebangsaan Pilihan
+        const masterTopics = [
+            { title: "Makna dan Tanggal Penting Proklamasi Kemerdekaan Indonesia", spoiler: "💡 Bahas detik-detik proklamasi dan arti pentingnya bagi bangsa." },
+            { title: "Refleksi Hari Pahlawan: Meneladani Semangat Juang Pendahulu", spoiler: "💡 Bagaimana cara generasi sekarang memaknai pengorbanan pahlawan." },
+            { title: "Arti Penting Hari Kesaktian Pancasila dalam Sejarah Bangsa", spoiler: "💡 Mengenang ketahanan ideologi negara dari berbagai ancaman." },
+            { title: "Kisah Perjuangan dan Biografi Bung Karno (Soekarno)", spoiler: "💡 Peran sang orator ulung sebagai Proklamator dan Presiden pertama." },
+            { title: "Kisah Perjuangan dan Biografi Mohammad Hatta (Bung Hatta)", spoiler: "💡 Bapak Koperasi Indonesia yang cerdas, jujur, dan sederhana." },
+            { title: "Perjuangan Emansipasi Wanita oleh R.A. Kartini", spoiler: "💡 Menyoroti pemikiran maju tentang kesetaraan hak pendidikan." },
+            { title: "Strategi Perang Pangeran Diponegoro dalam Perang Jawa", spoiler: "💡 Keteguhan perlawanan melawan kebijakan kolonial Belanda." },
+            { title: "Kepemimpinan Militer dan Keteladanan Jenderal Sudirman", spoiler: "💡 Panglima besar yang memimpin perang gerilya dalam keadaan sakit." },
+            { title: "Masa Kejayaan Kerajaan Majapahit dan Sumpah Palapa", spoiler: "💡 Patih Gajah Mada dan penyatuan nusantara di masa lalu." },
+            { title: "Kejayaan Kerajaan Sriwijaya sebagai Pusat Maritim Nusantara", spoiler: "💡 Peran Sriwijaya sebagai pusat pembelajaran agama Buddha dan perdagangan." },
+            { title: "Sejarah dan Peninggalan Kerajaan Kutai Martadipura", spoiler: "💡 Kerajaan Hindu tertua di Indonesia berdasarkan bukti prasasti Yupa." },
+            { title: "Peristiwa Sumpah Pemuda 28 Oktober 1928: Tonggak Persatuan", spoiler: "💡 Ikrar satu nusa, satu bangsa, dan satu bahasa Indonesia." },
+            { title: "Makna Filosofis Lambang Negara Burung Garuda dan Pancasila", spoiler: "💡 Arti setiap simbol pada perisai dan cengkeraman pita Bhinneka Tunggal Ika." },
+            { title: "Tugas Dasar Lembaga Tinggi Negara (Presiden, DPR, MPR, MA, MK)", spoiler: "💡 Pembagian kekuasaan eksekutif, legislatif, dan yudikatif." },
+            { title: "Sejarah Penciptaan Lagu Indonesia Raya oleh W.R. Supratman", spoiler: "💡 Kisah di balik lagu kebangsaan yang membakar semangat perjuangan." },
+            { title: "Sistem Pemilu di Indonesia: Pilpres, Pileg, dan Pilkada", spoiler: "💡 Proses demokrasi langsung oleh rakyat untuk memilih pemimpin." },
+            { title: "Sejarah Perjalanan Mata Uang Rupiah di Indonesia", spoiler: "💡 Dari Oeang Republik Indonesia (ORI) hingga rupiah modern." },
+            { title: "Tokoh Pahlawan Nasional yang Diabadikan pada Uang Kertas", spoiler: "💡 Mengenal jasa para pahlawan yang ada di lembaran rupiah." }
+        ];
+
+        let availableTopics = [...masterTopics];
+        let currentTopic = null;
+        let isRunning = false;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let eeeTracker = 0;
+        let blankTracker = 0;
+        
+        let mediaRecorder;
+        let audioContext;
+        let analyser;
+        let microphone;
+        let javascriptAnalyserInterval;
+        let recognition;
+
+        function generateRandomTopic() {
+            if (isRunning) return;
+
+            const titleEl = document.getElementById('topicTitle');
+            const spoilerEl = document.getElementById('topicSpoiler');
+            const rollBtn = document.getElementById('rollBtn');
+
+            rollBtn.disabled = true;
+            rollBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            titleEl.classList.add('rolling-effect');
+            spoilerEl.innerText = "💡 Memilih topik acak...";
+
+            let counter = 0;
+            const rollingInterval = setInterval(() => {
+                const tempIndex = Math.floor(Math.random() * masterTopics.length);
+                titleEl.innerText = `"${masterTopics[tempIndex].title}"`;
+                counter++;
+
+                if (counter > 10) {
+                    clearInterval(rollingInterval);
+                    titleEl.classList.remove('rolling-effect');
+
+                    if (availableTopics.length === 0) availableTopics = [...masterTopics];
+                    const randomIndex = Math.floor(Math.random() * availableTopics.length);
+                    currentTopic = availableTopics.splice(randomIndex, 1)[0];
+
+                    titleEl.innerText = `"${currentTopic.title}"`;
+                    spoilerEl.innerText = currentTopic.spoiler;
+
+                    rollBtn.disabled = false;
+                    rollBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }, 120);
+        }
+
+        function toggleMenu() {
+            const drawer = document.getElementById('historyDrawer');
+            const content = document.getElementById('drawerContent');
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => { drawer.classList.remove('opacity-0'); content.classList.remove('translate-x-full'); }, 10);
+            } else {
+                drawer.classList.add('opacity-0');
+                content.classList.add('translate-x-full');
+                setTimeout(() => { drawer.classList.add('hidden'); }, 300);
+            }
+        }
+
+        async function toggleSession() {
+            const btn = document.getElementById('actionBtn');
+            const micDot = document.getElementById('micDot');
+            const micText = document.getElementById('micText');
+
+            if (!currentTopic) {
+                alert("Silakan cari topik terlebih dahulu dengan menekan tombol 'Cari Topik 🎲'!");
+                return;
+            }
+
+            if (!isRunning) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    analyser.fftSize = 256;
+                    
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+
+                    let silenceTimer = 0;
+                    let isCountingBlank = false;
+
+                    javascriptAnalyserInterval = setInterval(() => {
+                        analyser.getByteFrequencyData(dataArray);
+                        let sum = 0;
+                        for(let i = 0; i < bufferLength; i++) { sum += dataArray[i]; }
+                        let averageVolume = sum / bufferLength;
+
+                        if (averageVolume < 8) {
+                            silenceTimer += 0.2;
+                            if (silenceTimer >= 1.5 && !isCountingBlank) {
+                                blankTracker++;
+                                document.getElementById('blankCount').innerText = blankTracker;
+                                isCountingBlank = true;
+                            }
+                        } else {
+                            silenceTimer = 0;
+                            isCountingBlank = false;
+                        }
+                    }, 200);
+
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (SpeechRecognition) {
+                        recognition = new SpeechRecognition();
+                        recognition.lang = 'id-ID';
+                        recognition.continuous = true;
+                        recognition.interimResults = true;
+
+                        recognition.onresult = (event) => {
+                            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                                let transcript = event.results[i][0].transcript.toLowerCase();
+                                if (transcript.includes('eee') || transcript.includes('emm') || transcript.includes('anu') || transcript.includes('eh')) {
+                                    eeeTracker++;
+                                    document.getElementById('eeeCount').innerText = eeeTracker;
+                                }
+                            }
+                        };
+                        recognition.start();
+                    }
+
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+
+                    isRunning = true;
+                    timeLeft = 60;
+                    eeeTracker = 0;
+                    blankTracker = 0;
+                    document.getElementById('eeeCount').innerText = eeeTracker;
+                    document.getElementById('blankCount').innerText = blankTracker;
+
+                    btn.innerText = "Selesai / Berhenti Lebih Awal";
+                    btn.className = "w-full py-4 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-2xl shadow-lg transition text-lg tracking-wide active:scale-95";
+                    
+                    micDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping";
+                    micText.innerText = "Merekam & Menganalisis Suara...";
+
+                    timerInterval = setInterval(() => {
+                        timeLeft--;
+                        let displaySec = timeLeft < 10 ? `0${timeLeft}` : timeLeft;
+                        document.getElementById('timerDisplay').innerText = `00:${displaySec}`;
+                        if (timeLeft <= 0) { stopSession(); }
+                    }, 1000);
+
+                } catch (err) {
+                    alert("Gagal mengakses mikrofon. Pastikan izin mikrofon di browser sudah diaktifkan.");
+                }
+            } else {
+                stopSession();
+            }
+        }
+
+        function stopSession() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            clearInterval(javascriptAnalyserInterval);
+            
+            if (recognition) { recognition.stop(); }
+            if (audioContext && audioContext.state !== 'closed') { audioContext.close(); }
+
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                mediaRecorder.onstop = () => { saveHistoryToLocal(); };
+            }
+
+            const btn = document.getElementById('actionBtn');
+            const micDot = document.getElementById('micDot');
+            const micText = document.getElementById('micText');
+
+            btn.innerText = "Mulai Berbicara (60 Detik)";
+            btn.className = "w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-2xl shadow-lg transition text-lg tracking-wide active:scale-95";
+            
+            micDot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
+            micText.innerText = "Mikrofon Standby";
+            document.getElementById('timerDisplay').innerText = "00:60";
+            
+            alert(`Sesi Selesai!\nTotal Eee/Anu: ${eeeTracker}\nTotal Jeda Kosong (Blank): ${blankTracker}`);
+        }
+
+        function saveHistoryToLocal() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+            const fullDateTime = `${timeStr} • ${dateStr}`;
+
+            const historyList = document.getElementById('historyList');
+            if(historyList.querySelector('.text-slate-500')) {
+                historyList.innerHTML = '';
+            }
+
+            const newCard = document.createElement('div');
+            newCard.className = "glass p-4 rounded-2xl border border-slate-800";
+            newCard.innerHTML = `
+                <div class="text-xs text-accentCyan font-semibold mb-1">${fullDateTime}</div>
+                <div class="font-bold text-sm text-slate-200 mb-2">"${currentTopic.title}"</div>
+                <div class="flex justify-between text-xs text-slate-400 bg-slate-950/40 p-2 rounded-xl">
+                    <span>Eee: <strong class="text-amber-400">${eeeTracker}</strong></span>
+                    <span>Blank: <strong class="text-rose-400">${blankTracker}</strong></span>
+                    <span>Durasi: <strong>${60 - timeLeft}s</strong></span>
+                </div>
+            `;
+            historyList.prepend(newCard);
+        }
+    </script>
+</body>
+</html>
+        .rolling-effect {
+            animation: pulseGlow 0.15s infinite;
+        }
+    </style>
+</head>
+<body class="bg-darkBg text-white min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- HEADER -->
+    <header class="w-full max-w-2xl mx-auto px-6 py-5 flex justify-between items-center">
+        <h1 class="text-lg md:text-xl font-bold bg-gradient-to-r from-accentCyan to-accentViolet bg-clip-text text-transparent">
+            PUBLIC SPEAKING TRAINER
+        </h1>
+        <button onclick="toggleMenu()" class="p-2 glass rounded-xl hover:bg-slate-800 transition text-accentCyan focus:outline-none">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="w-full max-w-2xl mx-auto px-6 flex-1 flex flex-col justify-center items-center pb-12">
+        
+        <!-- TOPIC CARD -->
+        <div id="topicCard" class="w-full glass rounded-3xl p-6 md:p-8 text-center shadow-2xl mb-8 transition-all duration-300">
+            <span class="text-xs uppercase tracking-widest text-accentCyan font-semibold bg-cyan-950/50 px-3 py-1 rounded-full border border-cyan-800/50">Topik Pilihan</span>
+            
+            <h2 id="topicTitle" class="text-xl md:text-2xl font-bold mt-4 mb-3 text-slate-100 min-h-[70px] flex items-center justify-center">
+                Tekan tombol "Cari Topik" untuk mulai!
+            </h2>
+            
             <p id="topicSpoiler" class="text-sm text-slate-400 mb-6 italic">
                 💡 Topik seputar sejarah, kebangsaan, dan pemerintahan akan muncul di sini.
             </p>

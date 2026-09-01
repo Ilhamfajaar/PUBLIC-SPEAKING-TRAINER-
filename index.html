@@ -1,0 +1,222 @@
+    <script>
+        // Database 1000+ Topik Unik & Anti-Berulang
+        const categories = [
+            "Teknologi & Masa Depan", "Kehidupan Profesional & Karier", "Pengembangan Diri & Mental", 
+            "Sosial & Budaya", "Pendidikan & Keterampilan", "Kesehatan & Gaya Hidup", 
+            "Bisnis & Kewirausahaan", "Sains & Alam Semesta", "Etika & Filosofi Hidup", "Lingkungan & Keberlanjutan"
+        ];
+
+        const subjects = [
+            "Kecerdasan Buatan (AI)", "Media Sosial", "Kebiasaan Membaca", "Manajemen Waktu", 
+            "Pekerjaan Remote", "Kesehatan Mental", "Pendidikan Finansial", "Perubahan Iklim", 
+            "Pola Pikir Berkembang (Growth Mindset)", "Sistem Pendidikan Modern", "Etika Kerja",
+            "Otomatisasi Pekerjaan", "Minimalisme", "Kecerdasan Emosional", "Seni Berkomunikasi"
+        ];
+
+        const contexts = [
+            "di era digital saat ini", "bagi generasi muda", "dalam 5 tahun ke depan", 
+            "menurut pandangan pribadi Anda", "di lingkungan kerja modern", "dalam kehidupan sehari-hari",
+            "bagi perkembangan karier", "dalam menghadapi masa depan yang tidak pasti"
+        ];
+
+        let masterTopics = [];
+        function generateMassiveTopics() {
+            let id = 1;
+            for (let c of categories) {
+                for (let s of subjects) {
+                    for (let x of contexts) {
+                        masterTopics.push({
+                            id: id++,
+                            title: `Pandangan Anda mengenai peran '${s}' terhadap ${c.toLowerCase()} ${x}?`,
+                            spoiler: `Fokus pada analisis dampak positif, tantangan nyata, serta solusi konkret ${x}.`
+                        });
+                    }
+                }
+            }
+        }
+        generateMassiveTopics();
+
+        let availableTopics = [...masterTopics];
+        let currentTopic = null;
+        let isRunning = false;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let eeeTracker = 0;
+        let blankTracker = 0;
+        
+        let mediaRecorder;
+        let audioContext;
+        let analyser;
+        let microphone;
+        let javascriptAnalyserInterval;
+        let recognition; // Web Speech API untuk tangkap kata "eee/anu"
+
+        function generateRandomTopic() {
+            if (isRunning) return;
+            if (availableTopics.length === 0) availableTopics = [...masterTopics];
+            const randomIndex = Math.floor(Math.random() * availableTopics.length);
+            currentTopic = availableTopics.splice(randomIndex, 1)[0];
+            document.getElementById('topicTitle').innerText = `"${currentTopic.title}"`;
+            document.getElementById('topicSpoiler').innerText = `💡 Panduan: ${currentTopic.spoiler}`;
+        }
+
+        generateRandomTopic();
+
+        function toggleMenu() {
+            const drawer = document.getElementById('historyDrawer');
+            const content = document.getElementById('drawerContent');
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => { drawer.classList.remove('opacity-0'); content.classList.remove('translate-x-full'); }, 10);
+            } else {
+                drawer.classList.add('opacity-0');
+                content.classList.add('translate-x-full');
+                setTimeout(() => { drawer.classList.add('hidden'); }, 300);
+            }
+        }
+
+        async function toggleSession() {
+            const btn = document.getElementById('actionBtn');
+            const micDot = document.getElementById('micDot');
+            const micText = document.getElementById('micText');
+
+            if (!isRunning) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    // 1. Setup Audio Analyzer untuk mendeteksi Blank (keheningan)
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    analyser.fftSize = 256;
+                    
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+
+                    let silenceTimer = 0;
+                    let isCountingBlank = false;
+
+                    // Cek volume suara tiap 200ms untuk mendeteksi jeda kosong (blank)
+                    javascriptAnalyserInterval = setInterval(() => {
+                        analyser.getByteFrequencyData(dataArray);
+                        let sum = 0;
+                        for(let i = 0; i < bufferLength; i++) { sum += dataArray[i]; }
+                        let averageVolume = sum / bufferLength;
+
+                        // Jika volume di bawah batas sunyi (misal < 10)
+                        if (averageVolume < 8) {
+                            silenceTimer += 0.2;
+                            if (silenceTimer >= 1.5 && !isCountingBlank) { // Jika diam > 1.5 detik
+                                blankTracker++;
+                                document.getElementById('blankCount').innerText = blankTracker;
+                                isCountingBlank = true; // Kunci agar tidak bertambah terus menerus dalam satu jeda
+                            }
+                        } else {
+                            silenceTimer = 0;
+                            isCountingBlank = false;
+                        }
+                    }, 200);
+
+                    // 2. Setup Speech Recognition untuk mendeteksi kata "eee", "emm", "anu"
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (SpeechRecognition) {
+                        recognition = new SpeechRecognition();
+                        recognition.lang = 'id-ID';
+                        recognition.continuous = true;
+                        recognition.interimResults = true;
+
+                        recognition.onresult = (event) => {
+                            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                                let transcript = event.results[i][0].transcript.toLowerCase();
+                                // Deteksi kata pengisi umum dalam bahasa Indonesia
+                                if (transcript.includes('eee') || transcript.includes('emm') || transcript.includes('anu') || transcript.includes('eh')) {
+                                    eeeTracker++;
+                                    document.getElementById('eeeCount').innerText = eeeTracker;
+                                }
+                            }
+                        };
+                        recognition.start();
+                    }
+
+                    // Setup MediaRecorder untuk rekam audio mentah
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+
+                    isRunning = true;
+                    timeLeft = 60;
+                    eeeTracker = 0;
+                    blankTracker = 0;
+                    document.getElementById('eeeCount').innerText = eeeTracker;
+                    document.getElementById('blankCount').innerText = blankTracker;
+
+                    btn.innerText = "Selesai / Berhenti Lebih Awal";
+                    btn.className = "w-full py-4 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-2xl shadow-lg transition text-lg tracking-wide active:scale-95";
+                    
+                    micDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping";
+                    micText.innerText = "Merekam & Menganalisis Suara...";
+
+                    // Timer Countdown 60 Detik
+                    timerInterval = setInterval(() => {
+                        timeLeft--;
+                        let displaySec = timeLeft < 10 ? `0${timeLeft}` : timeLeft;
+                        document.getElementById('timerDisplay').innerText = `00:${displaySec}`;
+                        if (timeLeft <= 0) { stopSession(); }
+                    }, 1000);
+
+                } catch (err) {
+                    alert("Gagal mengakses mikrofon. Pastikan izin mikrofon di browser sudah diaktifkan.");
+                }
+            } else {
+                stopSession();
+            }
+        }
+
+        function stopSession() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            clearInterval(javascriptAnalyserInterval);
+            
+            if (recognition) { recognition.stop(); }
+            if (audioContext && audioContext.state !== 'closed') { audioContext.close(); }
+
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                mediaRecorder.onstop = () => { saveHistoryToLocal(); };
+            }
+
+            const btn = document.getElementById('actionBtn');
+            const micDot = document.getElementById('micDot');
+            const micText = document.getElementById('micText');
+
+            btn.innerText = "Mulai Berbicara (60 Detik)";
+            btn.className = "w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-2xl shadow-lg transition text-lg tracking-wide active:scale-95";
+            
+            micDot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
+            micText.innerText = "Mikrofon Standby";
+            document.getElementById('timerDisplay').innerText = "00:60";
+            
+            alert(`Sesi Selesai!\nTotal Eee/Anu: ${eeeTracker}\nTotal Jeda Kosong (Blank): ${blankTracker}`);
+        }
+
+        function saveHistoryToLocal() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+            const fullDateTime = `${timeStr} • ${dateStr}`;
+
+            const historyList = document.getElementById('historyList');
+            const newCard = document.createElement('div');
+            newCard.className = "glass p-4 rounded-2xl border border-slate-800";
+            newCard.innerHTML = `
+                <div class="text-xs text-accentCyan font-semibold mb-1">${fullDateTime}</div>
+                <div class="font-bold text-sm text-slate-200 mb-2">"${currentTopic.title}"</div>
+                <div class="flex justify-between text-xs text-slate-400 bg-slate-950/40 p-2 rounded-xl">
+                    <span>Eee: <strong class="text-amber-400">${eeeTracker}</strong></span>
+                    <span>Blank: <strong class="text-rose-400">${blankTracker}</strong></span>
+                    <span>Durasi: <strong>${60 - timeLeft}s</strong></span>
+                </div>
+            `;
+            historyList.prepend(newCard);
+        }
+    </script>

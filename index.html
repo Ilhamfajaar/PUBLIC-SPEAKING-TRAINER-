@@ -30,6 +30,12 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        .rolling-effect {
+            animation: pulseGlow 0.15s infinite;
+        }
     </style>
 </head>
 <body class="bg-darkBg text-white min-h-screen flex flex-col justify-between overflow-x-hidden">
@@ -53,16 +59,16 @@
         <div id="topicCard" class="w-full glass rounded-3xl p-6 md:p-8 text-center shadow-2xl mb-8 transition-all duration-300">
             <span class="text-xs uppercase tracking-widest text-accentCyan font-semibold bg-cyan-950/50 px-3 py-1 rounded-full border border-cyan-800/50">Topik Indonesia</span>
             
-            <h2 id="topicTitle" class="text-xl md:text-2xl font-bold mt-4 mb-3 text-slate-100">
-                Memuat Topik...
+            <h2 id="topicTitle" class="text-xl md:text-2xl font-bold mt-4 mb-3 text-slate-100 min-h-[70px] flex items-center justify-center">
+                Tekan tombol "Cari Topik" untuk mulai!
             </h2>
             
             <p id="topicSpoiler" class="text-sm text-slate-400 mb-6 italic">
-                💡 Panduan: Menyiapkan materi latihan...
+                💡 Panduan: Topik menarik seputar pengetahuan umum Indonesia akan muncul secara acak di sini.
             </p>
 
-            <button onclick="generateRandomTopic()" class="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white font-semibold rounded-2xl shadow-lg transition transform active:scale-95">
-                Cari Topik Lain 🎲
+            <button id="rollBtn" onclick="generateRandomTopic()" class="w-full md:w-auto px-8 py-3.5 bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white font-semibold rounded-2xl shadow-lg transition transform active:scale-95 flex items-center justify-center mx-auto space-x-2">
+                <span>Cari Topik 🎲</span>
             </button>
         </div>
 
@@ -117,8 +123,18 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // 100 Topik Pengetahuan Umum & Budaya Indonesia
+        // 100 Topik Pengetahuan Umum, Kuliner, Tradisi, & Budaya Indonesia yang Relate
         const masterTopics = [
+            { title: "Lebih Enak Nasi Goreng Kampung atau Nasi Goreng Seafood?", spoiler: "Bahas cita rasa khas bumbu rempah lokal vs variasi modern." },
+            { title: "Kenapa Orang Indonesia Suka Banget Makan Pakai Sambal?", spoiler: "Fokus pada budaya kuliner pedas yang sudah mendarah daging." },
+            { title: "Sebutkan 3 Tempat Wisata Impianmu di Indonesia dan Alasannya", spoiler: "Deskripsikan keindahan alam dan daya tarik wisatanya secara persuasif." },
+            { title: "Macetnya Lalu Lintas Kota Besar: Tantangan atau Kebiasaan Baru?", spoiler: "Bahas dampak kemacetan terhadap produktivitas dan solusi transportasi." },
+            { title: "Fenomena 'Anak Senja' dan Tren Ngopi di Kafe Estetik", spoiler: "Gaya hidup nongkrong anak muda masa kini sebagai ruang sosial." },
+            { title: "Lebih Baik Liburan ke Pantai atau ke Gunung?", spoiler: "Berikan argumen seru mengenai ketenangan alam pegunungan vs deburan ombak pantai." },
+            { title: "Pengalaman Paling Berkesan Saat Naik Angkutan Umum", spoiler: "Ceritakan interaksi unik atau momen tak terlupakan di angkot/bis kota." },
+            { title: "Seberapa Penting Peran E-Wallet dalam Kehidupan Sehari-hari?", spoiler: "Bahas kemudahan transaksi tanpa tunai dan gaya hidup cashless." },
+            { title: "Suka Duka Kuliah atau Kerja Secara Online (WFH)", spoiler: "Bahas fleksibilitas waktu vs tantangan kurangnya interaksi sosial." },
+            { title: "Kenapa Gorengan Jadi Makanan Paling Merakyat di Indonesia?", spoiler: "Bahasa santai tentang camilan sejuta umat yang selalu ada di setiap suasana." },
             { title: "Makna dan Semangat di Balik Peristiwa Sumpah Pemuda", spoiler: "Bahas pentingnya persatuan pemuda lintas suku dan bahasa di Indonesia." },
             { title: "Karakteristik dan Filosofi Hidup Suku Jawa", spoiler: "Fokus pada nilai kesopanan, gotong royong, dan falsafah hidup bermasyarakat." },
             { title: "Keunikan Budaya dan Tradisi Suku Sunda", spoiler: "Sebutkan keramahan, seni musik tradisional, serta filosofi sabilulungan." },
@@ -153,7 +169,7 @@
             { title: "Perkembangan Transportasi Umum Modern di Jakarta (MRT/LRT)", spoiler: "Solusi kemacetan dan budaya baru naik transportasi publik." },
             { title: "Keunikan Tari Saman dari Aceh", spoiler: "Kecepatan gerakan tangan dan kekompakan tanpa alat musik." },
             { title: "Manfaat Jamu Tradisional bagi Kesehatan", spoiler: "Warisan leluhur berbahan rempah alami yang menyehatkan." },
-            { title: "Peran Penting Hutan Mangrove bagi Pesisir Indonesia", spoiler: "Pelindung abrasi abrasi pantai dan habitat ekosistem." },
+            { title: "Peran Penting Hutan Mangrove bagi Pesisir Indonesia", spoiler: "Pelindung abrasi pantai dan habitat ekosistem." },
             { title: "Keindahan Kawah Ijen dengan Fenomena Blue Fire", spoiler: "Keajaiban alam penambang sulfur dan api biru langka." },
             { title: "Sejarah Gedung Sate di Bandung", spoiler: "Ikon arsitektur kolonial yang menjadi pusat pemerintahan Jawa Barat." },
             { title: "Tradisi Sekaten di Surakarta dan Yogyakarta", spoiler: "Pasar malam tradisional menyambut Maulid Nabi Muhammad SAW." },
@@ -171,7 +187,7 @@
             { title: "Keindahan Wisata Dieng Plateau di Wonosobo", spoiler: "Negeri di atas awan, candi kuno, dan kawah vulkanik." },
             { title: "Peran Pemuda dalam Era Digital dan Media Sosial", spoiler: "Bijak bermedia sosial dan menyebar konten positif." },
             { title: "Keunikan Rumah Gadang Minangkabau", spoiler: "Bentuk atap bergonjong dan sistem kekerabatan matrilineal." },
-            { title: "Tradisi Periklanean dan Budaya Maritim Nenek Moyang", spoiler: "Bukti sejarah Indonesia sebagai negara pelaut ulung." },
+            { title: "Tradisi Perahu Lintas Laut dan Budaya Maritim Nenek Moyang", spoiler: "Bukti sejarah Indonesia sebagai negara pelaut ulung." },
             { title: "Kisah Pahlawan Nasional Pattimura dari Maluku", spoiler: "Perlawanan heroik terhadap monopoli perdagangan kolonial." },
             { title: "Pesona Wisata Bahari Wakatobi di Sulawesi Tenggara", spoiler: "Keindahan terumbu karang yang diakui dunia internasional." },
             { title: "Makna Gotong Royong dalam Tradisi Merti Desa", spoiler: "Wujud syukur atas hasil panen dan keselamatan warga." },
@@ -182,10 +198,10 @@
             { title: "Tradisi Kasada di Gunung Bromo", spoiler: "Persembahan hasil bumi oleh masyarakat Tengger kepada Sang Hyang Widhi." },
             { title: "Peran Moh. Hatta sebagai Bapak Koperasi Indonesia", spoiler: "Gagasan ekonomi kerakyatan untuk kesejahteraan bersama." },
             { title: "Keindahan Lembah Harau di Sumatera Barat", spoiler: "Cadas tebing granit raksasa yang dikelilingi alam hijau." },
-            { title: "Evolusi Transportasi Tradisional Becak dan Delman",spoiler: "Eksistensi kendaraan tradisional di tengah modernisasi kota." },
+            { title: "Evolusi Transportasi Tradisional Becak dan Delman", spoiler: "Eksistensi kendaraan tradisional di tengah modernisasi kota." },
             { title: "Kesenian Reog Ponorogo dan Daya Tarik Dadak Merak", spoiler: "Pertunjukan seni kolosal yang syarat unsur mistis dan estetika." },
             { title: "Pentingnya Literasi Keuangan Sejak Dini bagi Pelajar", spoiler: "Belajar menabung dan mengelola uang saku dengan bijak." },
-            { title: "Keunikan Tradisi Bau Nyale di Lombok", spoiler: "Pencarian cacing laut tahun folklor Putri Mandalika." },
+            { title: "Keunikan Tradisi Bau Nyale di Lombok", spoiler: "Pencarian cacing laut tahunan folklor Putri Mandalika." },
             { title: "Sejarah Perjuangan Teuku Umar di Tanah Rencong", spoiler: "Strategi taktik perang cerdik melawan penjajah." },
             { title: "Pesona Kepulauan Derawan di Kalimantan Timur", spoiler: "Habitat penyu hijau dan keindahan air laut yang jernih." },
             { title: "Makna Filosofis Motif Kain Tenun Ikat Sikka", spoiler: "Kekayaan corak khas Nusa Tenggara Timur penuh makna leluhur." },
@@ -213,10 +229,10 @@
             { title: "Keunikan Tradisi Grebeg Suro di Ponorogo", spoiler: "Perayaan menyambut Tahun Baru Hijriah dengan kirab budaya." },
             { title: "Sejarah Perjuangan Sutan Sjahrir di Masa Revolusi", spoiler: "Peran diplomat muda ulung dalam mempertahankan kedaulatan." },
             { title: "Keindahan Taman Laut Bunaken dan Ekosistemnya", spoiler: "Keanekaragaman terumbu karang dan ikan hias tropis." },
-            { title: "Tradisi Tradisional Batak Mangokal Holi", spoiler: "Ritual pemindahan tulang belulang leluhur yang dihormati." },
+            { title: "Tradisi Mangokal Holi pada Masyarakat Batak", spoiler: "Ritual pemindahan tulang belulang leluhur yang dihormati." },
             { title: "Potensi Pertanian Organik Lokal di Indonesia", spoiler: "Gerakan kembali ke alam untuk kesehatan pangan nasional." },
             { title: "Keunikan Arsitektur Jembatan Ampera di Palembang", spoiler: "Ikon kota di atas Sungai Musi yang bersejarah." },
-            { title: "Perjuangan Jenderal Ahmad Yani dalam Pertahanan Negara", spoiler: "Kisah kepahlawanan dalam peristiwa nasional G30S." },
+            { title: "Perjuangan Jenderal Ahmad Yani dalam Pertahanan Negara", spoiler: "Kisah kepahlawanan dalam peristiwa nasional." },
             { title: "Kearifan Lokal Warga Suku Kajang di Sulawesi Selatan", spoiler: "Komitmen ketat menjaga kelestarian hutan adat hitam." },
             { title: "Semangat Kebangsaan Menjaga Keutuhan NKRI", spoiler: "Tanggung jawab bersama merawat keberagaman Indonesia." }
         ];
@@ -236,16 +252,43 @@
         let javascriptAnalyserInterval;
         let recognition;
 
+        // Fungsi Tombol Cari Topik dengan Efek Rolling / Loading
         function generateRandomTopic() {
             if (isRunning) return;
-            if (availableTopics.length === 0) availableTopics = [...masterTopics];
-            const randomIndex = Math.floor(Math.random() * availableTopics.length);
-            currentTopic = availableTopics.splice(randomIndex, 1)[0];
-            document.getElementById('topicTitle').innerText = `"${currentTopic.title}"`;
-            document.getElementById('topicSpoiler').innerText = `💡 Panduan: ${currentTopic.spoiler}`;
-        }
 
-        generateRandomTopic();
+            const titleEl = document.getElementById('topicTitle');
+            const spoilerEl = document.getElementById('topicSpoiler');
+            const rollBtn = document.getElementById('rollBtn');
+
+            rollBtn.disabled = true;
+            rollBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            titleEl.classList.add('rolling-effect');
+            spoilerEl.innerText = "💡 Memilih topik acak terbaik untukmu...";
+
+            let counter = 0;
+            const rollingInterval = setInterval(() => {
+                // Tampilkan judul acak secara cepat selama efek rolling
+                const tempIndex = Math.floor(Math.random() * masterTopics.length);
+                titleEl.innerText = `"${masterTopics[tempIndex].title}"`;
+                counter++;
+
+                // Berhenti setelah 1.5 detik (10 putaran)
+                if (counter > 10) {
+                    clearInterval(rollingInterval);
+                    titleEl.classList.remove('rolling-effect');
+
+                    if (availableTopics.length === 0) availableTopics = [...masterTopics];
+                    const randomIndex = Math.floor(Math.random() * availableTopics.length);
+                    currentTopic = availableTopics.splice(randomIndex, 1)[0];
+
+                    titleEl.innerText = `"${currentTopic.title}"`;
+                    spoilerEl.innerText = `💡 Panduan: ${currentTopic.spoiler}`;
+
+                    rollBtn.disabled = false;
+                    rollBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }, 120);
+        }
 
         function toggleMenu() {
             const drawer = document.getElementById('historyDrawer');
@@ -264,6 +307,11 @@
             const btn = document.getElementById('actionBtn');
             const micDot = document.getElementById('micDot');
             const micText = document.getElementById('micText');
+
+            if (!currentTopic) {
+                alert("Silakan cari topik terlebih dahulu dengan menekan tombol 'Cari Topik 🎲'!");
+                return;
+            }
 
             if (!isRunning) {
                 try {

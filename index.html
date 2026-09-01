@@ -124,7 +124,6 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // Database Topik Sejarah & Kebangsaan Pilihan
         const masterTopics = [
             { title: "Makna dan Tanggal Penting Proklamasi Kemerdekaan Indonesia", spoiler: "💡 Bahas detik-detik proklamasi dan arti pentingnya bagi bangsa." },
             { title: "Refleksi Hari Pahlawan: Meneladani Semangat Juang Pendahulu", spoiler: "💡 Bagaimana cara generasi sekarang memaknai pengorbanan pahlawan." },
@@ -171,6 +170,194 @@
             rollBtn.disabled = true;
             rollBtn.classList.add('opacity-50', 'cursor-not-allowed');
             titleEl.classList.add('rolling-effect');
+            spoilerEl.innerText = "💡 Memilih topik acak...";
+
+            let counter = 0;
+            const rollingInterval = setInterval(() => {
+                const tempIndex = Math.floor(Math.random() * masterTopics.length);
+                titleEl.innerText = `"${masterTopics[tempIndex].title}"`;
+                counter++;
+
+                if (counter > 10) {
+                    clearInterval(rollingInterval);
+                    titleEl.classList.remove('rolling-effect');
+
+                    if (availableTopics.length === 0) availableTopics = [...masterTopics];
+                    const randomIndex = Math.floor(Math.random() * availableTopics.length);
+                    currentTopic = availableTopics.splice(randomIndex, 1)[0];
+
+                    titleEl.innerText = `"${currentTopic.title}"`;
+                    spoilerEl.innerText = currentTopic.spoiler;
+
+                    rollBtn.disabled = false;
+                    rollBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }, 120);
+        }
+
+        function toggleMenu() {
+            const drawer = document.getElementById('historyDrawer');
+            const content = document.getElementById('drawerContent');
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                setTimeout(() => { drawer.classList.remove('opacity-0'); content.classList.remove('translate-x-full'); }, 10);
+            } else {
+                drawer.classList.add('opacity-0');
+                content.classList.add('translate-x-full');
+                setTimeout(() => { drawer.classList.add('hidden'); }, 300);
+            }
+        }
+
+        async function toggleSession() {
+            const btn = document.getElementById('actionBtn');
+            const micDot = document.getElementById('micDot');
+            const micText = document.getElementById('micText');
+
+            if (!currentTopic) {
+                alert("Silakan cari topik terlebih dahulu dengan menekan tombol 'Cari Topik 🎲'!");
+                return;
+            }
+
+            if (!isRunning) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+                    analyser.fftSize = 256;
+                    
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+
+                    let silenceTimer = 0;
+                    let isCountingBlank = false;
+
+                    javascriptAnalyserInterval = setInterval(() => {
+                        analyser.getByteFrequencyData(dataArray);
+                        let sum = 0;
+                        for(let i = 0; i < bufferLength; i++) { sum += dataArray[i]; }
+                        let averageVolume = sum / bufferLength;
+
+                        if (averageVolume < 8) {
+                            silenceTimer += 0.2;
+                            if (silenceTimer >= 1.5 && !isCountingBlank) {
+                                blankTracker++;
+                                document.getElementById('blankCount').innerText = blankTracker;
+                                isCountingBlank = true;
+                            }
+                        } else {
+                            silenceTimer = 0;
+                            isCountingBlank = false;
+                        }
+                    }, 200);
+
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (SpeechRecognition) {
+                        recognition = new SpeechRecognition();
+                        recognition.lang = 'id-ID';
+                        recognition.continuous = true;
+                        recognition.interimResults = true;
+
+                        recognition.onresult = (event) => {
+                            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                                let transcript = event.results[i][0].transcript.toLowerCase();
+                                if (transcript.includes('eee') || transcript.includes('emm') || transcript.includes('anu') || transcript.includes('eh')) {
+                                    eeeTracker++;
+                                    document.getElementById('eeeCount').innerText = eeeTracker;
+                                }
+                            }
+                        };
+                        recognition.start();
+                    }
+
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+
+                    isRunning = true;
+                    timeLeft = 60;
+                    eeeTracker = 0;
+                    blankTracker = 0;
+                    document.getElementById('eeeCount').innerText = eeeTracker;
+                    document.getElementById('blankCount').innerText = blankTracker;
+
+                    btn.innerText = "Selesai / Berhenti Lebih Awal";
+                    btn.className = "w-full py-4 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-2xl shadow-lg transition text-lg tracking-wide active:scale-95";
+                    
+                    micDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping";
+                    micText.innerText = "Merekam & Menganalisis Suara...";
+
+                    timerInterval = setInterval(() => {
+                        timeLeft--;
+                        let displaySec = timeLeft < 10 ? `0${timeLeft}` : timeLeft;
+                        document.getElementById('timerDisplay').innerText = `00:${displaySec}`;
+                        if (timeLeft <= 0) { stopSession(); }
+                    }, 1000);
+
+                } catch (err) {
+                    alert("Gagal mengakses mikrofon. Pastikan izin mikrofon di browser sudah diaktifkan.");
+                }
+            } else {
+                stopSession();
+            }
+        }
+
+        function stopSession() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            clearInterval(javascriptAnalyserInterval);
+            
+            if (recognition) { recognition.stop(); }
+            if (audioContext && audioContext.state !== 'closed') { audioContext.close(); }
+
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                mediaRecorder.onstop = () => { saveHistoryToLocal(); };
+            }
+
+            const btn = document.getElementById('actionBtn');
+            const micDot = document.getElementById('micDot');
+            const micText = document.getElementById('micText');
+
+            btn.innerText = "Mulai Berbicara (60 Detik)";
+            btn.className = "w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-2xl shadow-lg transition text-lg tracking-wide active:scale-95";
+            
+            micDot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
+            micText.innerText = "Mikrofon Standby";
+            document.getElementById('timerDisplay').innerText = "00:60";
+            
+            alert(`Sesi Selesai!\nTotal Eee/Anu: ${eeeTracker}\nTotal Jeda Kosong (Blank): ${blankTracker}`);
+        }
+
+        function saveHistoryToLocal() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+            const fullDateTime = `${timeStr} • ${dateStr}`;
+
+            const historyList = document.getElementById('historyList');
+            if(historyList.querySelector('.text-slate-500')) {
+                historyList.innerHTML = '';
+            }
+
+            const newCard = document.createElement('div');
+            newCard.className = "glass p-4 rounded-2xl border border-slate-800";
+            newCard.innerHTML = `
+                <div class="text-xs text-accentCyan font-semibold mb-1">${fullDateTime}</div>
+                <div class="font-bold text-sm text-slate-200 mb-2">"${currentTopic.title}"</div>
+                <div class="flex justify-between text-xs text-slate-400 bg-slate-950/40 p-2 rounded-xl">
+                    <span>Eee: <strong class="text-amber-400">${eeeTracker}</strong></span>
+                    <span>Blank: <strong class="text-rose-400">${blankTracker}</strong></span>
+                    <span>Durasi: <strong>${60 - timeLeft}s</strong></span>
+                </div>
+            `;
+            historyList.prepend(newCard);
+        }
+    </script>
+</body>
+</html>
+lassList.add('rolling-effect');
             spoilerEl.innerText = "💡 Memilih topik acak...";
 
             let counter = 0;
